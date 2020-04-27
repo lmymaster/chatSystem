@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.limingyi.dao.ReplyMapper">
+  <resultMap id="replyAndUser" type="com.limingyi.entity.Reply">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="topic_id" jdbcType="INTEGER" property="topicId" />
+    <result column="movie_id" jdbcType="INTEGER" property="moviesId" />
+    <result column="reply_user_id" jdbcType="INTEGER" property="replyUserId" />
+    <!-- 用户二级回复 -->
+    <result column="secondreply_user_id" jdbcType="INTEGER" property="secondreplyUserId" />
+    <result column="target_user_id" jdbcType="INTEGER" property="targetuserId" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="device" jdbcType="VARCHAR" property="device" />
+    <result column="content" jdbcType="LONGVARCHAR" property="content" />
+    <association property="user" javaType="com.limingyi.entity.User">
+      <id column="id" property="id" jdbcType="INTEGER" />
+      <result column="username" property="username" jdbcType="VARCHAR" />
+      <result column="avatar" property="avatar" jdbcType="VARCHAR" />
+    </association>
+    <association property="topic" javaType="com.limingyi.entity.Topic">
+      <id column="id" property="id" jdbcType="INTEGER" />
+      <result column="title" property="title" jdbcType="VARCHAR" />
+    </association>
+  </resultMap>
+  
+  <sql id="Base_Column_List" >
+    id, topic_id,reply_user_id,create_time,update_time,device,content
+  </sql>
+   <sql id="Base_Column_List1" >
+    id, movie_id,reply_user_id,create_time,update_time,content
+  </sql>
+  <select id="getRepliesOfTopic" resultMap="replyAndUser" parameterType="java.lang.Integer" >
+  SELECT reply.*,user.username,user.avatar
+  from reply,user
+  where reply.reply_user_id = user.id and reply.topic_id = #{topicId,jdbcType=INTEGER}
+  order by create_time ASC ;
+  </select>
+   <select id="getRepliesOfMovies" resultMap="replyAndUser" parameterType="java.lang.Integer" >
+  SELECT moviereply.movie_id,moviereply.reply_user_id,moviereply.create_time,moviereply.content,user.username,user.avatar,user.id
+  from moviereply,user
+  where moviereply.reply_user_id = user.id and moviereply.movie_id = #{moviesId,jdbcType=INTEGER}
+  order by create_time ASC ;
+  </select>
+  <!-- 电影评论二级回复 -->
+    <select id="getRepliesOfMovieSecond" resultMap="replyAndUser" parameterType="java.lang.Integer" >
+  SELECT secondReply.*,user.username,user.avatar
+  from secondReply,user
+  where secondReply.secondreply_user_id = user.id  and secondReply.movie_id = #{moviesId,jdbcType=INTEGER}
+  order by create_time ASC ;
+  </select>
+    <select id="selectById" resultMap="replyAndUser" parameterType="java.lang.Integer" >
+  SELECT 
+  <include refid="Base_Column_List" />
+  from reply where id = #{id,jdbcType=INTEGER}
+  </select>
+  
+  <select id="getRepliesAll" resultMap="replyAndUser" parameterType="java.lang.Integer" >
+  SELECT reply.*,user.username,user.avatar,topic.title
+  from
+   reply LEFT JOIN user on  reply.reply_user_id = user.id
+  LEFT JOIN topic on reply.topic_id=topic.id where reply.topic_id=topic.id
+  order by reply.id ASC ;
+  </select>
+  <!-- 收到消息通知的回复 -->
+  <select id="listByNotice" resultMap="replyAndUser" parameterType="java.lang.Integer" >
+    select reply.*,user.username,user.avatar,topic.title
+    from reply LEFT JOIN user on  reply.reply_user_id = user.id
+	LEFT JOIN topic on reply.topic_id=topic.id  LEFT JOIN notice on notice.notice_user_id=reply.reply_user_id and reply.topic_id=notice.topic_id where notice.target_user_id = #{uid,jdbcType=INTEGER} and reply.topic_id=topic.id
+    order by create_time ASC ;
+  </select>
+
+  <select id="getRepliesNum" resultType="java.lang.Integer" parameterType="java.lang.Integer" >
+    SELECT count(id)
+    FROM reply
+    WHERE topic_id = #{topicId,jdbcType=INTEGER}
+  </select>
+  <!-- 统计当天的评论数 -->
+	<select id="countToday" resultType="java.lang.Integer">
+        select count(1)
+        from reply a
+        where TO_DAYS(a.create_time) = TO_DAYS(NOW())
+    </select>
+  <!-- 后台评论列表 -->
+    <select id="selectAllForAdmin" resultType="java.lang.String" resultMap="replyAndUser" >
+    SELECT reply.*,user.username,user.avatar,topic.title
+    from reply LEFT JOIN user on  reply.reply_user_id = user.id LEFT JOIN topic on reply.topic_id=topic.id 
+    where reply.topic_id=topic.id
+		<if test="username != null">
+		AND user.username = #{username}
+		</if>
+		<if test="topic != null">
+		<!-- 模糊查询中，只能使用$,使用#的话，会被解析为列 -->
+		AND topic.title like '%${topic}%'
+		</if>
+		ORDER BY reply.create_time DESC
+     </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from reply
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+
+  <insert id="insert" parameterType="com.limingyi.entity.Reply" >
+    insert into reply (topic_id, reply_user_id,
+      create_time, update_time,
+      content)
+    values ( #{topicId,jdbcType=INTEGER}, #{replyUserId,jdbcType=INTEGER},
+      #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP},
+      #{content,jdbcType=LONGVARCHAR})
+  </insert>
+  
+  <!-- 电影评论添加 -->
+    <insert id="insert1" parameterType="com.limingyi.entity.Reply" >
+    insert into moviereply (movie_id, reply_user_id,
+      create_time, update_time,
+      content)
+    values ( #{moviesId,jdbcType=INTEGER}, #{replyUserId,jdbcType=INTEGER},
+      #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP},
+      #{content,jdbcType=LONGVARCHAR})
+  </insert>
+   <!-- 电影二级评论添加 -->
+    <insert id="insert2" parameterType="com.limingyi.entity.Reply" >
+    insert into secondReply (secondreply_user_id, target_user_id,
+      create_time,content,movie_id)
+    values ( #{secondreplyUserId,jdbcType=INTEGER}, #{targetuserId,jdbcType=INTEGER},
+      #{createTime,jdbcType=TIMESTAMP},
+      #{content,jdbcType=LONGVARCHAR},#{moviesId,jdbcType=INTEGER})
+  </insert>
+<update id="updateByPrimaryKey" parameterType="com.limingyi.entity.Reply" >
+    update reply
+    <set >
+      <if test="topicId != null" >
+        topic_id = #{topicId,jdbcType=INTEGER},
+      </if>
+      <if test="replyUserId != null" >
+        reply_user_id = #{replyUserId,jdbcType=INTEGER},
+      </if>
+    
+      <if test="createTime != null" >
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null" >
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="content != null" >
+        content = #{content,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+</mapper>

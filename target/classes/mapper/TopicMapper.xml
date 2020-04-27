@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.limingyi.dao.TopicMapper">
+  <resultMap id="BaseResultMap" type="com.limingyi.entity.Topic">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="user_id" jdbcType="INTEGER" property="userId" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="title" jdbcType="VARCHAR" property="title" />
+    <result column="click" jdbcType="INTEGER" property="click" />
+    <result column="tab_id" jdbcType="TINYINT" property="tabId" />
+    <result column="top" jdbcType="BIT" property="top" />
+    <result column="good" jdbcType="BIT" property="good" />
+  </resultMap>
+<!-- 主题基本结果集+ 主题内容  用于主题详情-->
+  <resultMap id="ResultMapWithBLOBs" type="com.limingyi.entity.Topic" extends="BaseResultMap" >
+    <result column="content" property="content" jdbcType="LONGVARCHAR" />
+  </resultMap>
+
+  <!-- 主题和用户信息结果集 用于首页显示  -->
+  <resultMap id="topicAndUserInfo" type="com.limingyi.entity.Topic" >
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="user_id" property="userId" jdbcType="INTEGER" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
+    <result column="content" property="content" jdbcType="LONGVARCHAR" />
+    <result column="title" property="title" jdbcType="VARCHAR" />
+    <result column="click" property="click" jdbcType="INTEGER" />
+    <result column="tab_id" property="tabId" jdbcType="TINYINT" />
+    <result column="top" jdbcType="TINYINT" property="top" />
+    <result column="good" jdbcType="BIT" property="good" />
+    <result column="count_replies" property="countReplies" jdbcType="INTEGER" />
+    <association property="user" javaType="com.limingyi.entity.User">
+      <id column="id" property="id" jdbcType="INTEGER" />
+      <result column="username" property="username" jdbcType="VARCHAR" />
+      <result column="avatar" property="avatar" jdbcType="VARCHAR" />
+      <result column="credit" property="credit" jdbcType="INTEGER" />
+    </association>
+    <association property="tab" javaType="com.limingyi.entity.Tab">
+      <id column="id" property="id" jdbcType="INTEGER" />
+      <result column="tab_name" property="tabName" jdbcType="VARCHAR" />
+    </association>
+ 
+   
+  </resultMap>
+
+  <!-- 主题详情及用户必要信息 用于主题详情页  -->
+  <resultMap id="topicAndUserDetail" type="com.limingyi.entity.Topic">
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="user_id" property="userId" jdbcType="INTEGER" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
+    <result column="title" property="title" jdbcType="VARCHAR" />
+    <result column="content" property="content" jdbcType="LONGVARCHAR" />
+    <result column="click" property="click" jdbcType="INTEGER" />
+    <result column="tab_id" property="tabId" jdbcType="TINYINT" />
+        <result column="top" jdbcType="TINYINT" property="top" />
+        <result column="good" jdbcType="BIT" property="good" />
+     <result column="nice" property="nice" jdbcType="INTEGER" />
+    <association property="user" javaType="com.limingyi.entity.User">
+      <id column="id" property="id" jdbcType="INTEGER" />
+      <result column="username" property="username" jdbcType="VARCHAR" />
+      <result column="avatar" property="avatar" jdbcType="VARCHAR" />
+      <result column="credit" property="credit" jdbcType="INTEGER" />
+    </association>
+  </resultMap>
+
+  <!-- 最多评论主题列表 -->
+  <resultMap id="mostCommentsTopic" type="com.limingyi.entity.Topic">
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="count_replies" property="countReplies" jdbcType="INTEGER" />
+    <result column="title" property="title" jdbcType="VARCHAR" />
+  </resultMap>
+  
+  <sql id="Base_Column_List" >
+    id, user_id, create_time, update_time, title, click, tab_id,top,good
+  </sql>
+
+  <sql id="Blob_Column_List" >
+    content
+  </sql>
+
+  <select id="listTopicsAndUsers" resultMap="topicAndUserInfo" >
+    select topic.*,user.username,user.avatar,user.credit,
+    tab.tab_name,count(reply.id) as count_replies from topic LEFT JOIN user on  topic.user_id = user.id
+	LEFT JOIN tab on tab.id=topic.tab_id LEFT JOIN reply on topic.id=reply.topic_id
+	group by topic.id order by topic.top desc,topic.id desc ;
+  </select>
+       <!-- 根据查询精华话题 -->
+  <select id="selectAllGood" resultMap="topicAndUserInfo" parameterType="java.lang.Integer">
+    select topic.id,topic.user_id,topic.create_time,topic.update_time,topic.title,topic.click,topic.tab_id,topic.top,topic.good,user.username,user.avatar,user.credit,
+    tab.tab_name,count(reply.id) as count_replies from topic LEFT JOIN user on  topic.user_id = user.id
+	LEFT JOIN tab on tab.id=topic.tab_id LEFT JOIN reply on topic.id=reply.topic_id where good = 1 group by topic.id order by topic.top desc,topic.id desc 
+	<if test="start != null">
+            limit #{start,jdbcType=INTEGER}
+            <if test="limit != null">
+                ,#{limit,jdbcType=INTEGER}
+            </if>
+        </if>
+     </select>
+
+  <select id="listTopicsAndUsersOfTab" parameterType="java.lang.Integer" resultMap="topicAndUserInfo" >
+   select topic.id,topic.user_id,topic.create_time,topic.update_time,topic.title,topic.click,topic.tab_id,user.username,user.avatar ,
+    tab.tab_name,count(reply.id) as count_replies from topic LEFT JOIN user on  topic.user_id = user.id
+	LEFT JOIN tab on tab.id=topic.tab_id  LEFT JOIN reply on topic.id=reply.topic_id where tab.id = #{id,jdbcType=INTEGER}
+	group by topic.id order by topic.top desc,topic.id desc ;
+  </select>
+  <!-- 收藏主题列表 -->
+    <select id="listByCollect" parameterType="java.lang.Integer" resultMap="topicAndUserInfo" >
+   select topic.id,topic.user_id,topic.create_time,topic.update_time,topic.title,topic.click,topic.tab_id,user.username,user.avatar ,
+    tab.tab_name,count(reply.id) as count_replies from topic LEFT JOIN user on  topic.user_id = user.id
+	LEFT JOIN tab on tab.id=topic.tab_id  LEFT JOIN reply on topic.id=reply.topic_id LEFT JOIN collect on collect.title_id=topic.id where collect.user_id = #{uid,jdbcType=INTEGER}
+	group by topic.id order by topic.id desc ;
+  </select>
+
+  <select id="selectById" parameterType="java.lang.Integer" resultMap="topicAndUserDetail">
+      SELECT topic.*,user.username,user.avatar from topic,user where topic.user_id = user.id and topic.id = #{id,jdbcType=INTEGER};
+  </select>
+  <!-- 搜索 -->
+	<select id="listBySearch" resultMap="topicAndUserInfo" parameterType="string">
+	  select topic.id,topic.user_id,topic.create_time,topic.update_time,topic.title,topic.click,topic.tab_id,topic.top,topic.good,user.username,user.avatar,user.credit,
+     tab.tab_name,count(reply.id) as count_replies from topic LEFT JOIN user on  topic.user_id = user.id
+	LEFT JOIN tab on tab.id=topic.tab_id LEFT JOIN reply on topic.id=reply.topic_id 
+    where topic.title like CONCAT('%',#{keyword},'%') 
+	group by topic.id order by topic.top desc,topic.create_time desc
+	<if test="start != null">
+            limit #{start,jdbcType=INTEGER}
+            <if test="limit != null">
+                ,#{limit,jdbcType=INTEGER}
+            </if>
+        </if>
+	</select>
+  <!-- 我的主题 -->
+	<select id="listByOwn" resultMap="topicAndUserInfo" parameterType="java.lang.Integer">
+	select topic.id,topic.user_id,topic.create_time,topic.update_time,topic.title,topic.click,topic.tab_id,user.username,user.avatar ,
+    tab.tab_name,count(reply.id) as count_replies from topic LEFT JOIN user on  topic.user_id = user.id
+	LEFT JOIN tab on tab.id=topic.tab_id  LEFT JOIN reply on topic.id=reply.topic_id where user.id = #{userId,jdbcType=INTEGER}
+	group by topic.id order by topic.id desc ;
+	</select>
+  <!-- 分页查找 -->
+  <select id="listBypage" resultMap="topicAndUserInfo" parameterType="java.lang.Integer">
+    select topic.id,topic.user_id,topic.create_time,topic.update_time,topic.title,topic.click,topic.tab_id,topic.top,topic.good,user.username,user.avatar,user.credit,
+    tab.tab_name,count(reply.id) as count_replies from topic LEFT JOIN user on  topic.user_id = user.id
+	LEFT JOIN tab on tab.id=topic.tab_id LEFT JOIN reply on topic.id=reply.topic_id group by topic.id order by topic.top desc,topic.id desc 
+	<if test="start != null">
+            limit #{start,jdbcType=INTEGER}
+            <if test="limit != null">
+                ,#{limit,jdbcType=INTEGER}
+            </if>
+        </if>
+  </select>
+    <!-- tab分页查找 -->
+  <select id="listBypageOfTab" resultMap="topicAndUserInfo" parameterType="java.lang.Integer">
+    select topic.id,topic.user_id,topic.create_time,topic.update_time,topic.title,topic.click,topic.tab_id,topic.top,topic.good,user.username,user.avatar,user.credit,
+    tab.tab_name,count(reply.id) as count_replies from topic LEFT JOIN user on  topic.user_id = user.id
+	LEFT JOIN tab on tab.id=topic.tab_id LEFT JOIN reply on topic.id=reply.topic_id where tab.id = #{tabId,jdbcType=INTEGER} 
+	group by topic.id order by topic.top desc,topic.id desc 
+	<if test="start != null">
+            limit #{start,jdbcType=INTEGER}
+            <if test="limit != null">
+                ,#{limit,jdbcType=INTEGER}
+            </if>
+        </if>
+  </select>
+
+  <select id="getAllTopics" resultMap="BaseResultMap" >
+    select
+    <include refid="Base_Column_List" />
+    from topic
+    ORDER BY id DESC
+  </select>
+
+  <select id="getTopicsNum" resultType="java.lang.Integer" >
+    select
+    COUNT(*)
+    from topic
+  </select>
+    <select id="getTopicsNumByGood" resultType="java.lang.Integer" >
+    select
+    COUNT(*)
+    from topic where good = 1
+  </select>
+  <!-- 查找话题的数目 -->
+   <select id="getTopicsNumByserch" resultType="java.lang.Integer" parameterType="string">
+    select
+    COUNT(1)
+    from topic,user where topic.user_id = user.id and topic.title like CONCAT('%',#{keyword},'%') 
+  </select>
+    <select id="getTopicsNumByUser" resultType="java.lang.Integer" >
+    select
+    COUNT(*)
+    from topic where user_id=#{uid,jdbcType=INTEGER}
+  </select>
+    <select id="getTopicsNumOfTab" resultType="java.lang.Integer" >
+    select
+    COUNT(*)
+    from topic where tab_id = #{tabId,jdbcType=INTEGER}
+  </select>
+    <!-- 统计当天的话题数 -->
+   <select id="countToday" resultType="java.lang.Integer">
+        select count(1)
+        from topic a
+        where TO_DAYS(a.create_time) = TO_DAYS(NOW())
+    </select>
+
+  <select id="listMostCommentsTopics" resultMap="mostCommentsTopic">
+    SELECT topic.id,topic.title,count(reply.id) as count_replies  from topic ,reply  where topic.id = reply.topic_id group by topic.id order by count_replies desc limit 5;
+  </select>
+
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from topic
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+
+  <insert id="insert" parameterType="com.limingyi.entity.Topic" >
+    insert into topic (user_id, create_time,
+      update_time, title,
+      tab_id, nice,content,top,good)
+    values ( #{userId,jdbcType=INTEGER}, #{createTime,jdbcType=TIMESTAMP},
+      #{updateTime,jdbcType=TIMESTAMP}, #{title,jdbcType=VARCHAR},
+      #{tabId,jdbcType=TINYINT},#{nice,jdbcType=INTEGER}, #{content,jdbcType=LONGVARCHAR}, #{top,jdbcType=BIT},#{good,jdbcType=BIT})
+  </insert>
+
+  <insert id="insertSelective" parameterType="com.limingyi.entity.Topic" >
+    insert into topic
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        id,
+      </if>
+      <if test="userId != null" >
+        user_id,
+      </if>
+      <if test="createTime != null" >
+        create_time,
+      </if>
+      <if test="updateTime != null" >
+        update_time,
+      </if>
+      <if test="title != null" >
+        title,
+      </if>
+      <if test="click != null" >
+        click,
+      </if>
+      <if test="tabId != null" >
+        tab_id,
+      </if>
+      <if test="content != null" >
+        content,
+      </if>
+       <if test="top != null" >
+        top,
+      </if>
+       <if test="good != null" >
+        good,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="userId != null" >
+        #{userId,jdbcType=INTEGER},
+      </if>
+      <if test="createTime != null" >
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null" >
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="title != null" >
+        #{title,jdbcType=VARCHAR},
+      </if>
+      <if test="click != null" >
+        #{click,jdbcType=INTEGER},
+      </if>
+      <if test="tabId != null" >
+        #{tabId,jdbcType=TINYINT},
+      </if>
+      <if test="content != null" >
+        #{content,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="top != null" >
+        #{top,jdbcType=BIT},
+      </if>
+       <if test="good != null" >
+        #{good,jdbcType=BIT},
+      </if>
+    </trim>
+  </insert>
+
+  <update id="updateByPrimaryKeySelective" parameterType="com.limingyi.entity.Topic" >
+    update topic
+    <set >
+      <if test="userId != null" >
+        user_id = #{userId,jdbcType=INTEGER},
+      </if>
+      <if test="createTime != null" >
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null" >
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="title != null" >
+        title = #{title,jdbcType=VARCHAR},
+      </if>
+      <if test="click != null" >
+        click = #{click,jdbcType=INTEGER},
+      </if>
+      <if test="tabId != null" >
+        tab_id = #{tabId,jdbcType=TINYINT},
+      </if>
+      <if test="nice != null" >
+        nice = #{nice,jdbcType=INTEGER},
+      </if>
+      <if test="content != null" >
+        content = #{content,jdbcType=LONGVARCHAR},
+      </if>
+       <if test="top != null" >
+        top = #{top,jdbcType=BIT},
+      </if>
+       <if test="good != null" >
+        good = #{good,jdbcType=BIT},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.limingyi.entity.Topic" >
+    update topic
+    set user_id = #{userId,jdbcType=INTEGER},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP},
+      title = #{title,jdbcType=VARCHAR},
+      click = #{click,jdbcType=INTEGER},
+      tab_id = #{tabId,jdbcType=TINYINT},
+      content = #{content,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.limingyi.entity.Topic" >
+    update topic
+    set user_id = #{userId,jdbcType=INTEGER},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP},
+      title = #{title,jdbcType=VARCHAR},
+      click = #{click,jdbcType=INTEGER},
+        nice = #{nice,jdbcType=INTEGER},
+      tab_id = #{tabId,jdbcType=TINYINT},
+      top = #{top,jdbcType=BIT},
+      good = #{good,jdbcType=BIT}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+  <update id="clickAddOne" parameterType="java.lang.Integer" >
+    update topic
+    set
+    click = click+1
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+
+
+
+</mapper>

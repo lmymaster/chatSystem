@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.limingyi.dao.MoviesMapper">
+  <resultMap id="BaseResultMap" type="com.limingyi.entity.Movies">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="moviename" jdbcType="VARCHAR" property="moviename" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="area" jdbcType="VARCHAR" property="area" />
+    <result column="click" jdbcType="INTEGER" property="click" />
+    <result column="director" jdbcType="VARCHAR" property="director" />
+    <result column="actor" jdbcType="VARCHAR" property="actor" />
+    <result column="introduce" jdbcType="LONGVARCHAR" property="introduce" />
+    <result column="address" jdbcType="VARCHAR" property="address" />
+    <result column="avatar" jdbcType="VARCHAR" property="avatar" />
+    <result column="up_time" jdbcType="VARCHAR" property="upTime" />
+  </resultMap>
+  
+  
+    <!-- 最多评论电影列表列表 -->
+  <resultMap id="mostCommentsMovies" type="com.limingyi.entity.Movies">
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="count_replies" property="countReplies" jdbcType="INTEGER" />
+    <result column="avatar" property="avatar" jdbcType="VARCHAR" />
+     <result column="moviename" jdbcType="VARCHAR" property="moviename" />
+  </resultMap>
+  
+  <sql id="Base_Column_List" >
+    id, moviename, create_time, area, click, director, actor,introduce,address,avatar,up_time
+  </sql>
+  <select id="selectById" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+      SELECT * from movies where id = #{id,jdbcType=INTEGER};
+  </select>
+  <!-- 获取全部影片 -->
+    <select id="getAllMovies" resultMap="BaseResultMap" >
+    select
+    <include refid="Base_Column_List" />
+    from movies
+    ORDER BY id DESC
+  </select>
+  <!-- 获取最热电影 根据评论数 -->
+    <select id="listMostCommentsMovies" resultMap="mostCommentsMovies">
+    SELECT movies.id,movies.moviename,movies.avatar,count(moviereply.id) as count_replies  from movies ,moviereply  where movies.id = moviereply.movie_id group by movies.id order by count_replies desc limit 3;
+  </select>
+  
+    <insert id="insert" parameterType="com.limingyi.entity.Movies" >
+    insert into movies (moviename, create_time,
+      area, click,director,actor,
+      avatar, address,introduce,up_time)
+    values (#{moviename,jdbcType=VARCHAR},#{createTime,jdbcType=TIMESTAMP},
+      #{area,jdbcType=VARCHAR}, #{click,jdbcType=INTEGER},
+      #{director,jdbcType=VARCHAR}, #{actor,jdbcType=VARCHAR},
+      #{avatar,jdbcType=VARCHAR},#{address,jdbcType=VARCHAR},
+       #{introduce,jdbcType=LONGVARCHAR},#{upTime,jdbcType=VARCHAR})
+  </insert>
+   <insert id="insertSelective" parameterType="com.limingyi.entity.Movies" >
+    insert into movies
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        id,
+      </if>
+      <if test="moviename != null" >
+        moviename,
+      </if>
+      <if test="createTime != null" >
+        create_time,
+      </if>
+      <if test="area != null" >
+        area,
+      </if>
+      <if test="click != null" >
+        click,
+      </if>
+      <if test="director != null" >
+        director,
+      </if>
+      <if test="actor != null" >
+        actor,
+      </if>
+      <if test="avatar != null" >
+        avatar,
+      </if>
+      <if test="address != null" >
+        address,
+      </if>
+      <if test="introduce != null" >
+        introduce,
+      </if>
+        <if test="upTime != null" >
+        up_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        #{id,jdbcType=INTEGER},
+      </if>
+      <if test="moviename != null" >
+        moviename = #{moviename,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="area != null" >
+        area = #{area,jdbcType=VARCHAR},
+      </if>
+      <if test="click != null" >
+        click = #{click,jdbcType=INTEGER},
+      </if>
+      <if test="director != null" >
+        director = #{director,jdbcType=VARCHAR},
+      </if>
+      <if test="actor != null" >
+        actor = #{actor,jdbcType=VARCHAR},
+      </if>
+       <if test="avatar != null" >
+        avatar = #{avatar,jdbcType=VARCHAR},
+      </if>
+       <if test="address != null" >
+        address = #{address,jdbcType=VARCHAR},
+      </if>
+      <if test="introduce != null" >
+        introduce = #{introduce,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="upTime != null" >
+        up_time = #{upTime,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  
+  <update id="updateByPrimaryKeySelective" parameterType="com.limingyi.entity.Movies" >
+    update movies
+    <set >
+      <if test="moviename != null" >
+        moviename = #{moviename,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="area != null" >
+        area = #{area,jdbcType=VARCHAR},
+      </if>
+      <if test="click != null" >
+        click = #{click,jdbcType=VARCHAR},
+      </if>
+      <if test="director != null" >
+        director = #{director,jdbcType=VARCHAR},
+      </if>
+      <if test="actor != null" >
+        actor = #{actor,jdbcType=VARCHAR},
+      </if>
+       <if test="avatar != null" >
+        avatar = #{avatar,jdbcType=VARCHAR},
+      </if>
+       <if test="address != null" >
+        address = #{address,jdbcType=VARCHAR},
+      </if>
+      <if test="introduce != null" >
+        introduce = #{introduce,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="upTime != null" >
+        up_time = #{upTime,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  
+  <update id="clickAddOne" parameterType="java.lang.Integer" >
+    update movies
+    set
+    click = click+1
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  </mapper>

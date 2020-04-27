@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+    <!-- Mybatis会动态实现daoImpl,不过需要在mapper文件夹下创建BookDao.xml和AppointmentDao.xml
+  		spring-dao.xml文件会自动扫描mapper文件夹下的配置 -->
+    <!-- 
+    1.namespace是该xml对应的接口的全名
+    2.select和update中的id对应方法名
+    3.resultType是返回值类型
+    4.parameterType是参数类型(可选)    
+    5.#{...}填写的是方法的参数 
+    6.parameterType:输入参数类型
+    7.resultType:输出参数类型
+    -->
+ <mapper namespace="com.limingyi.dao.LunboMapper">
+	<!-- 目的：为dao接口方法提供sql语句配置 -->
+    <resultMap id="BaseResultMap" type="com.limingyi.entity.Lunbo">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="avatar" jdbcType="VARCHAR" property="avatar"/>
+        <result column="type" jdbcType="TINYINT" property="type"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+       id, avatar,type
+    </sql>
+  <select id="getAllLunbo" resultMap="BaseResultMap" >
+    select
+    <include refid="Base_Column_List" />
+    from lunbo
+    ORDER BY id ASC
+  </select>
+     <update id="updateLunbo" parameterType="com.limingyi.entity.Lunbo" >
+    update lunbo
+    set  avatar = #{avatar,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+    </mapper>

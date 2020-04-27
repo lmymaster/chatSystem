@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+    <!-- Mybatis会动态实现daoImpl,不过需要在mapper文件夹下创建BookDao.xml和AppointmentDao.xml
+  		spring-dao.xml文件会自动扫描mapper文件夹下的配置 -->
+    <!-- 
+    1.namespace是该xml对应的接口的全名
+    2.select和update中的id对应方法名
+    3.resultType是返回值类型
+    4.parameterType是参数类型(可选)    
+    5.#{...}填写的是方法的参数 
+    6.parameterType:输入参数类型
+    7.resultType:输出参数类型
+    -->
+<mapper namespace="com.limingyi.dao.CollectMapper">
+	<!-- 目的：为dao接口方法提供sql语句配置 -->
+    <resultMap id="BaseResultMap" type="com.limingyi.entity.Collect">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="user_id" jdbcType="INTEGER" property="userId"/>
+        <result column="title_id" jdbcType="INTEGER" property="titleId"/>
+        <result column="create_date" jdbcType="TIMESTAMP" property="createDate"/>
+          <result column="update_date" jdbcType="TIMESTAMP" property="updateDate"/>
+    </resultMap>
+    <sql id="Base_Column_List">
+       id, user_id, title_id, create_date,update_date
+    </sql>
+      <!-- 判断用户是否已收藏此话题  title_id是主题Id-->
+     <select id="isCollect" resultMap="BaseResultMap" parameterType="java.lang.Integer">
+        select
+        <include refid="Base_Column_List" />
+        from collect
+        where user_id = #{uid,jdbcType=INTEGER} AND title_id = #{tid,jdbcType=INTEGER}
+     </select>
+     <!-- 取消收藏，删除收藏记录 -->
+        <delete id="delete" parameterType="java.lang.Integer" >
+        delete from collect
+        where user_id = #{uid,jdbcType=INTEGER} AND title_id = #{tid,jdbcType=INTEGER}
+      </delete>
+ 
+       <!-- 添加收藏 -->
+     <insert id="insert" parameterType="com.limingyi.entity.Collect" keyProperty="id" useGeneratedKeys="true">
+     	insert into collect
+     	(user_id,
+     	 title_id,
+     	 create_date,update_date)
+     	values
+     	(#{userId,jdbcType=INTEGER},
+     	 #{titleId,jdbcType=INTEGER},
+     	 #{createDate,jdbcType=TIMESTAMP}
+     	 ,#{createDate,jdbcType=TIMESTAMP})
+     </insert>
+      <!-- 统计用户收藏话题的数量 -->
+     <select id="countByUid" resultType="java.lang.Integer">
+     	select count(1)
+     	from collect a,topic b
+     	where a.user_id = #{uid,jdbcType=INTEGER}
+     	and a.title_id = b.id
+     </select>
+     
+    </mapper>

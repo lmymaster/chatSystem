@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+    <!-- Mybatis会动态实现daoImpl,不过需要在mapper文件夹下创建BookDao.xml和AppointmentDao.xml
+  		spring-dao.xml文件会自动扫描mapper文件夹下的配置 -->
+    <!-- 
+    1.namespace是该xml对应的接口的全名
+    2.select和update中的id对应方法名
+    3.resultType是返回值类型
+    4.parameterType是参数类型(可选)    
+    5.#{...}填写的是方法的参数 
+    6.parameterType:输入参数类型
+    7.resultType:输出参数类型
+    -->
+<mapper namespace="com.limingyi.dao.FollowMapper">
+	<!-- 目的：为dao接口方法提供sql语句配置 -->
+    <resultMap id="BaseResultMap" type="com.limingyi.entity.Follow">
+        <id column="id" jdbcType="INTEGER" property="id"/>
+        <result column="uid" jdbcType="INTEGER" property="uid"/>
+        <result column="fid" jdbcType="INTEGER" property="fid"/>
+        <result column="is_delete" jdbcType="BIT" property="isDelete"/>
+	   <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+	   <association property="user" javaType="com.limingyi.entity.User">
+	      <id column="id" property="id" jdbcType="INTEGER" />
+	      <result column="username" property="username" jdbcType="VARCHAR" />
+	      <result column="avatar" property="avatar" jdbcType="VARCHAR" />
+	      <result column="credit" property="credit" jdbcType="INTEGER" />
+	    </association>
+    </resultMap>
+    <sql id="Base_Column_List">
+       id, uid, fid, create_time,is_delete
+    </sql>
+      <!-- 判断用户是否关注此用户-->
+     <select id="isFollow" resultMap="BaseResultMap" parameterType="java.lang.Integer">
+        select
+        <include refid="Base_Column_List" />
+        from follow
+        where uid = #{uid,jdbcType=INTEGER} AND fid = #{fid,jdbcType=INTEGER}
+     </select>
+     
+     <!-- 获取特别关注的人 -->
+     <select id="listOfFollow" resultMap="BaseResultMap" parameterType="java.lang.Integer">
+        select follow.*,user.username,user.avatar
+        from follow,user
+        where follow.fid = user.id and follow.uid = #{uid,jdbcType=INTEGER} 
+        </select>
+        
+     <!-- 取消关注 -->
+        <delete id="delete" parameterType="java.lang.Integer" >
+        delete from follow
+        where uid = #{uid,jdbcType=INTEGER} AND fid = #{fid,jdbcType=INTEGER}
+      </delete>
+ 
+       <!-- 加入关注-->
+     <insert id="insert" parameterType="com.limingyi.entity.Follow" keyProperty="id" useGeneratedKeys="true">
+     	insert into follow
+     	(uid,
+     	 fid,
+     	 create_time,is_delete)
+     	values
+     	(#{uid,jdbcType=INTEGER},
+     	 #{fid,jdbcType=INTEGER},
+     	 #{createTime,jdbcType=TIMESTAMP}, #{isDelete,jdbcType=BIT})
+     
+     </insert>
+      <!-- 统计用户关注的用户的数量 -->
+     <select id="countByUid" resultType="java.lang.Integer">
+     	select count(1)
+     	from follow a,user b
+     	where a.uid = #{uid,jdbcType=INTEGER}
+     	and a.fid = b.id
+     </select>
+     
+    </mapper>
